@@ -1,0 +1,3619 @@
+{% extends "tourism-base.html" %} {% load static %} 
+{% block title %}Tourism{%endblock title %} {% block content %}
+<style>
+  /* CSS styles for the map container */
+  #map {
+    width: 100%; /* Adjust width to fill the available space */
+    height: 800px; /* Adjust height as needed */
+  }
+  /* #directions-button { position: absolute; top: 143px; left: 269px; z-index: 1; } */
+  #directions-button { position: absolute;  z-index: 1; }
+  
+  /* Style for the background video */
+  #background-video {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -1;
+    opacity: 1;
+  }
+
+  /* ################################################ */
+  .clickable-image {
+    transition: transform 0.2s; /* Add smooth transition */
+  }
+
+  .clickable-image:hover {
+    transform: scale(1.8); /* Increase scale on hover */
+  }
+
+  #basemap-selector {
+    font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+    position: absolute;
+    width: 0;
+    top: 210px; /* Adjust as needed */
+    /* left: 1300px; */
+    right: 31%;
+    display: none;
+
+    z-index: 1000; /* Ensure it's above other map elements */
+  }
+
+  #basemap-selector.show {
+    display: block;
+  }
+
+
+</style>
+<style>
+  @import url("https://fonts.googleapis.com/css?family=Roboto:400,300,100");
+  @import url("https://cdnjs.cloudflare.com/ajax/libs/weather-icons/1.3.2/css/weather-icons.min.css");
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: black;
+    font-family: "Roboto";
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.025em;
+    margin: 0;
+    padding: 0;
+    font-size: large;
+    /* text-decoration: underline; */
+  }
+  a {
+    color: black;
+    text-decoration: none;
+  }
+  a:hover,
+  .active {
+    opacity: 1;
+  }
+  .nav-link {
+    color: white;
+    font-size: larger;
+    font-weight: 400;
+  }
+  p {
+    color: black;
+    text-decoration: none;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.025em;
+    margin: 0;
+    padding: 0;
+    font-size: large;
+  }
+  /* .wrapper {
+	width: 440px;
+	margin: 0 auto;
+} */
+  .searchbar,
+  .button {
+    height: 35px;
+    /* margin: 1em 0 ; */
+    padding: 0;
+    font: 400 1rem "Roboto";
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    color: black;
+    border: none;
+  }
+  .searchbar {
+    float: left;
+    width: 200px;
+    border-bottom: solid thin black;
+    color: #e8e8e8;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .searchbar::-webkit-input-placeholder {
+    color: black;
+    opacity: 0.35;
+  }
+  .searchbar::-moz-placeholder {
+    color: black;
+    opacity: 0.35;
+  }
+  .searchbar:-ms-input-placeholder {
+    color: black;
+    opacity: 0.35;
+  }
+  .searchbar:-moz-placeholder {
+    color: black;
+    opacity: 0.35;
+  }
+
+  .button:focus,
+  .searchbar:focus {
+    outline: none;
+    color: black;
+  }
+  .searchbar:focus::-webkit-input-placeholder {
+    color: black;
+    opacity: 0.7;
+  }
+  .searchbar:focus::-moz-placeholder {
+    color: black;
+    opacity: 0.7;
+  }
+  .searchbar:focus:-ms-input-placeholder {
+    color: black;
+    opacity: 0.7;
+  }
+  .searchbar:focus:-moz-placeholder {
+    color: black;
+    opacity: 0.7;
+  }
+
+  .button {
+    float: left;
+    width: 100px;
+  }
+  .panel {
+    width: 100%;
+    display: inline-block;
+  }
+  .weather {
+    width: 100%;
+    margin-top: 10px;
+    display: inline-block;
+  }
+  .city {
+    text-align: left;
+    text-transform: uppercase;
+    color: #e8e8e8;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .group {
+    width: 200px;
+    margin-bottom: 10px;
+    text-align: right;
+    float: right;
+    clear: both;
+    padding-right: 13%;
+  }
+  .temp {
+    font-size: 2.5em;
+    font-weight: 500;
+    line-height: 0.75;
+  }
+  .celsius,
+  .fahrenheit,
+  .divider {
+    font-size: 1rem;
+    vertical-align: super;
+  }
+  .divider {
+    margin: 0 0.05em;
+  }
+ 
+  .block {
+    display: table-cell;
+    padding: 0.5em 0 0 0;
+    text-align: center;
+  }
+  .high {
+    font-weight: 500;
+    margin: 0.25em 3;
+  }
+</style>
+
+<style>
+  @keyframes swing {
+    0% {
+      transform: rotate(0deg);
+    }
+    10% {
+      transform: rotate(10deg);
+    }
+    30% {
+      transform: rotate(0deg);
+    }
+    40% {
+      transform: rotate(-10deg);
+    }
+    50% {
+      transform: rotate(0deg);
+    }
+    60% {
+      transform: rotate(5deg);
+    }
+    70% {
+      transform: rotate(0deg);
+    }
+    80% {
+      transform: rotate(-5deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes sonar {
+    0% {
+      transform: scale(0.9);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  body {
+    font-size: 0.9rem;
+  }
+  .page-wrapper .sidebar-wrapper,
+  .sidebar-wrapper .sidebar-brand > a,
+  .sidebar-wrapper .sidebar-dropdown > a:after,
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a:before,
+  .sidebar-wrapper ul li a i,
+  .page-wrapper .page-content,
+  .sidebar-wrapper .sidebar-search input.search-menu,
+  .sidebar-wrapper .sidebar-search .input-group-text,
+  .sidebar-wrapper .sidebar-menu ul li a,
+  #show-sidebar,
+  #close-sidebar {
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+    
+  }
+
+  /*----------------page-wrapper----------------*/
+
+  .page-wrapper {
+    height: 100vh;
+  }
+
+  .page-wrapper .theme {
+    width: 40px;
+    /* height: 40px; */
+    display: inline-block;
+    border-radius: 4px;
+    margin: 2px;
+  }
+
+  .page-wrapper .theme.chiller-theme {
+    background: #d61515;
+  }
+
+  /*----------------toggeled sidebar----------------*/
+
+  .page-wrapper.toggled .sidebar-wrapper {
+    left: 0px;
+  }
+
+  @media screen and (min-width: 768px) {
+    .page-wrapper.toggled .page-content {
+      padding-left: 200px;
+    }
+  }
+  /*----------------show sidebar button----------------*/
+  #show-sidebar {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    border-radius: 0 4px 4px 0px;
+    width: 35px;
+    transition-delay: 0.3s;
+  }
+  .page-wrapper.toggled #show-sidebar {
+    left: -40px;
+  }
+  /*----------------sidebar-wrapper----------------*/
+
+  .sidebar-wrapper {
+    width: 260px;
+    height: 100%;
+    max-height: 100%;
+    position: fixed;
+    top: 55px;
+    left: -300px;
+    z-index: 999;
+  }
+
+  .sidebar-wrapper ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sidebar-wrapper a {
+    text-decoration: none;
+  }
+
+  /*----------------sidebar-content----------------*/
+
+  .sidebar-content {
+    max-height: calc(100% - 30px);
+    height: calc(100% - 30px);
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .sidebar-content.desktop {
+    overflow-y: hidden;
+  }
+
+  /*--------------------sidebar-brand----------------------*/
+
+  .sidebar-wrapper .sidebar-brand {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-wrapper .sidebar-brand > a {
+    text-transform: uppercase;
+    font-weight: bold;
+    flex-grow: 1;
+  }
+
+  .sidebar-wrapper .sidebar-brand #close-sidebar {
+    cursor: pointer;
+    font-size: 20px;
+  }
+  /*--------------------sidebar-header----------------------*/
+
+  .sidebar-wrapper .sidebar-header {
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-pic {
+    float: left;
+    width: 60px;
+    padding: 2px;
+    border-radius: 12px;
+    margin-right: 15px;
+    overflow: hidden;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-pic img {
+    object-fit: cover;
+    height: 100%;
+    width: 100%;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-info {
+    float: left;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-info > span {
+    display: block;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-info .user-role {
+    font-size: 12px;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-info .user-status {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .sidebar-wrapper .sidebar-header .user-info .user-status i {
+    font-size: 8px;
+    margin-right: 4px;
+    color: #5cb85c;
+  }
+
+  /*-----------------------sidebar-search------------------------*/
+
+  .sidebar-wrapper .sidebar-search > div {
+    padding: 10px 20px;
+  }
+
+  /*----------------------sidebar-menu-------------------------*/
+
+  .sidebar-wrapper .sidebar-menu {
+    padding-bottom: 10px;
+  }
+
+  .sidebar-wrapper .sidebar-menu .header-menu span {
+    font-weight: bold;
+    font-size: 14px;
+    padding: 15px 20px 5px 20px;
+    display: inline-block;
+  }
+
+  .sidebar-wrapper .sidebar-menu ul li a {
+    display: inline-block;
+    width: 100%;
+    text-decoration: none;
+    position: relative;
+    padding: 3px 30px 3px 20px;
+  }
+
+  .sidebar-wrapper .sidebar-menu ul li a i {
+    margin-right: 10px;
+    font-size: 12px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 4px;
+  }
+
+  .sidebar-wrapper .sidebar-menu ul li a:hover > i::before {
+    display: inline-block;
+    animation: swing ease-in-out 0.5s 1 alternate;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown > a:after {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: "\f105";
+    font-style: normal;
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    background: 0 0;
+    position: absolute;
+    right: 15px;
+    top: 14px;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu ul {
+    padding: 5px 0;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li {
+    padding-left: 4px;
+    font-size: 13px;
+  }
+
+  .sidebar-wrapper
+    .sidebar-menu
+    .sidebar-dropdown
+    .sidebar-submenu
+    li
+    a:before {
+    content: "\f111";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 400;
+    font-style: normal;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin-right: 10px;
+    font-size: 8px;
+  }
+
+  .sidebar-wrapper .sidebar-menu ul li a span.label,
+  .sidebar-wrapper .sidebar-menu ul li a span.badge {
+    float: right;
+    margin-top: 8px;
+    margin-left: 5px;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a .badge,
+  .sidebar-wrapper
+    .sidebar-menu
+    .sidebar-dropdown
+    .sidebar-submenu
+    li
+    a
+    .label {
+    float: right;
+    margin-top: 0px;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-submenu {
+    display: none;
+  }
+
+  .sidebar-wrapper .sidebar-menu .sidebar-dropdown.active > a:after {
+    transform: rotate(90deg);
+    right: 17px;
+  }
+
+  /*--------------------------page-content-----------------------------*/
+
+  .page-wrapper .page-content {
+    display: inline-block;
+    width: 100%;
+    padding-left: 0px;
+    padding-top: 15px;
+  }
+
+  .page-wrapper .page-content > div {
+    padding: 1px 0px;
+  }
+
+  /* .page-wrapper .page-content {
+  overflow-x: hidden;
+} */
+
+  /*------scroll bar---------------------*/
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 7px;
+  }
+  ::-webkit-scrollbar-button {
+    width: 0px;
+    height: 0px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #525965;
+    border: 0px none #ffffff;
+    border-radius: 0px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #525965;
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background: #525965;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border: 0px none #ffffff;
+    border-radius: 50px;
+  }
+  ::-webkit-scrollbar-track:hover {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track:active {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /*-----------------------------chiller-theme-------------------------------------------------*/
+
+  .chiller-theme .sidebar-wrapper {
+    background: #135d66;
+  }
+
+  .chiller-theme .sidebar-wrapper .sidebar-header,
+  .chiller-theme .sidebar-wrapper .sidebar-search,
+  .chiller-theme .sidebar-wrapper .sidebar-menu {
+    border-top: 1px solid #ffffff;
+  }
+
+  .chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+  .chiller-theme .sidebar-wrapper .sidebar-search .input-group-text {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .chiller-theme .sidebar-wrapper .sidebar-header .user-info .user-role,
+  .chiller-theme .sidebar-wrapper .sidebar-header .user-info .user-status,
+  .chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+  .chiller-theme .sidebar-wrapper .sidebar-search .input-group-text,
+  .chiller-theme .sidebar-wrapper .sidebar-brand > a,
+  .chiller-theme .sidebar-wrapper .sidebar-menu ul li a,
+  .chiller-theme .sidebar-footer > a {
+    color: #ffffff;
+  }
+
+  .chiller-theme .sidebar-wrapper .sidebar-menu ul li:hover > a,
+  .chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown.active > a,
+  .chiller-theme .sidebar-wrapper .sidebar-header .user-info,
+  .chiller-theme .sidebar-wrapper .sidebar-brand > a:hover,
+  .chiller-theme .sidebar-footer > a:hover i {
+    color: #ffffff;
+  }
+
+  .page-wrapper.chiller-theme.toggled #close-sidebar {
+    color: #ffffff;
+  }
+
+  .page-wrapper.chiller-theme.toggled #close-sidebar:hover {
+    color: #ffffff;
+  }
+
+  .chiller-theme .sidebar-wrapper ul li:hover a i,
+  .chiller-theme
+    .sidebar-wrapper
+    .sidebar-dropdown
+    .sidebar-submenu
+    li
+    a:hover:before,
+  .chiller-theme
+    .sidebar-wrapper
+    .sidebar-search
+    input.search-menu:focus
+    + span,
+  .chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown.active a i {
+    color: #16c7ff;
+    text-shadow: 0px 0px 10px rgba(22, 199, 255, 0.5);
+  }
+
+  /* .chiller-theme .sidebar-wrapper .sidebar-menu ul li a i,
+  .chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown div,
+  .chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+  .chiller-theme .sidebar-wrapper .sidebar-search .input-group-text {
+    background: #43817B;
+  } */
+
+  .chiller-theme .sidebar-wrapper .sidebar-menu .header-menu span {
+    color: #ffffff;
+  }
+
+  @-webkit-keyframes glowing {
+  0% { background-color: #3a3f48; -webkit-box-shadow: 0 0 3px #3a3f48; }
+  50% { background-color: #961414; -webkit-box-shadow: 0 0 40px #961414; }
+  100% { background-color: #3a3f48; -webkit-box-shadow: 0 0 3px #3a3f48; }
+}
+
+@-moz-keyframes glowing {
+  0% { background-color: #3a3f48; -moz-box-shadow: 0 0 3px #3a3f48; }
+  50% { background-color: #961414; -moz-box-shadow: 0 0 40px #961414; }
+  100% { background-color: #3a3f48; -moz-box-shadow: 0 0 3px #3a3f48; }
+}
+
+@-o-keyframes glowing {
+  0% { background-color: #3a3f48; box-shadow: 0 0 3px #3a3f48; }
+  50% { background-color: #961414; box-shadow: 0 0 40px #961414; }
+  100% { background-color: #3a3f48; box-shadow: 0 0 3px #3a3f48; }
+}
+
+@keyframes glowing {
+  0% { background-color: #3a3f48; box-shadow: 0 0 3px #3a3f48; }
+  50% { background-color: #961414; box-shadow: 0 0 40px #961414; }
+  100% { background-color: #3a3f48; box-shadow: 0 0 3px #3a3f48; }
+}
+
+span{
+  font-size: 16px;
+}
+</style>
+
+
+<style>
+  
+.checkboxes {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.checkboxes__row {
+  display: flex;
+}
+.checkboxes__row:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+.checkboxes__item {
+  padding: 11px;
+  width: 50%;
+}
+
+
+/* STYLE E */
+
+.checkbox.style-e {
+  display: inline-block;
+  position: relative;
+  padding-left: 120px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.checkbox.style-e input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+.checkbox.style-e input:checked ~ .checkbox__checkmark {
+  background-color: #f7cb15;
+}
+.checkbox.style-e input:checked ~ .checkbox__checkmark:after {
+  left: 21px;
+}
+.checkbox.style-e:hover input ~ .checkbox__checkmark {
+  background-color: #eee;
+}
+.checkbox.style-e:hover input:checked ~ .checkbox__checkmark {
+  background-color: #f7cb15;
+}
+.checkbox.style-e .checkbox__checkmark {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  height: 20px;
+  width: 50px;
+  background-color: #eee;
+  transition: background-color 0.25s ease;
+  border-radius: 11px;
+}
+.checkbox.style-e .checkbox__checkmark:after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 15px;
+  height: 14px;
+  display: block;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: left 0.25s ease;
+}
+.checkbox.style-e .checkbox__body {
+  color: #ffffff;
+  line-height: 0.6;
+  font-size: 16px;
+  transition: color 0.25s ease;
+  font-weight: bold; 
+  white-space: nowrap;
+}
+
+
+</style>
+
+
+
+<style>
+  #videoContainer {
+    position: relative;
+}
+
+#videoPlayer.big {
+    height: 50%;
+    width: 50%;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+#closeButton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 24px;
+    color: white;
+    z-index: 10000;
+}
+table {
+            width: 100%;
+            border-collapse: collapse;
+            padding-top:30px;
+            
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            /* background-color: #f2f2f2; */
+            font-size: 20px;
+        }
+        
+</style>
+
+
+<style> 
+.video-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+.video-container iframe {
+  width: 100%;
+  height: 100%;
+}
+    .image-container {
+        display: flex;
+        animation: slide 10s linear 0s infinite; /* Adjust the animation duration as needed */
+    }
+
+    .image-container img {
+        margin-right: 10px; /* Adjust the spacing between images */
+        max-width: 100%; /* Adjust the width of the images */
+        height: 470px;
+    }
+
+    @keyframes slide {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+#animatedImage {
+    transition: all 0.3s ease-in-out; /* Smooth transition for all properties */
+}
+
+.centered {
+    position: fixed;
+    top: 50%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+    height: 900px; /* Adjust as needed */
+    width: 900px; /* Adjust as needed */
+}
+
+
+</style>
+
+
+
+<style>
+  .forecast {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    display: table;
+    text-transform: uppercase;
+}
+
+.forecast-card {
+    flex-basis: calc(100% / 7);
+    text-align: center;
+}
+
+.forecast-card i {
+    font-size: 24px;
+}
+
+</style>
+
+<style>
+  .map-overlay-items {
+    font: 14px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+    position: absolute;
+    border-radius: 8px;   
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  
+  .map-overlay-items button { 
+    width: 100%;
+  }
+
+
+   
+</style>
+
+<!-- <div class="page-wrapper chiller-theme toggled"> -->
+<div class="page-wrapper chiller-theme toggled">
+  <a id="show-sidebar" class="btn btn-sm btn-dark" href="#">
+    <i class="fas fa-bars"></i>
+  </a>
+  <!-- Navbar -->
+  <nav id="main-navbar" class="navbar navbar-expand-lg fixed-top" style="background-color: #135d66;">
+    <div class="container-fluid">
+        <!-- Logo button -->
+        <a class="navbar-brand me-auto" href="{% url 'index' %}">
+            <img src="{% static 'img/ndma_logo.png' %}" height="40" alt="" loading="lazy" />
+        </a>      
+        <!-- Centered text -->
+        <span class="navbar-text d-lg-block" style="font-weight: 700; font-size: 28px; color: #fbfbfb; padding-left: 900px;">
+            Pakistan Tourism Portal
+        </span>
+        <!-- Collapse button for smaller screens -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <!-- Navbar links -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-auto">
+                <!-- Add your navigation links here -->
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+
+  <!-- sidebar-Navbar -->
+  <nav id="sidebar" class="sidebar-wrapper">
+    <div class="sidebar-content">
+      <div class="sidebar-brand">
+        <a href="#"> Navigation</a>
+        <div id="close-sidebar">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <div class="sidebar-menu">
+        <br>
+
+        <!-- Advisories -->
+        <ul>
+          <li style="padding-left: 80px; ">
+            <button type="button" class="btn btn-lg" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background: #3a3f48; color: #ffffff; text-decoration: none;
+            -webkit-animation: glowing 1500ms infinite;
+            -moz-animation: glowing 1500ms infinite;
+            -o-animation: glowing 1500ms infinite;
+            animation: glowing 1500ms infinite;">
+              Advisories
+            </button>         
+          </li>
+          <!-- Modal -->
+          <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Advisory PNGs</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Ticker column -->
+                        <div class="image-container">
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </ul>
+        <br>
+        <hr class="solid" style=" border-top: 4px solid white; ">
+        
+        <!-- Provinces layer -->
+        <ul>
+          <li class="sidebar-dropdown">
+            <a >
+              <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+              <span>Province</span>
+            </a>
+            <div class="sidebar-submenu">
+              <ul>
+                <li>
+                  <a href="{% url 'capital-home' %}">             
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                    <span>Capital</span>
+                   
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'punjab-home' %}">              
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                    <span>Punjab</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'sindh-home' %}">                  
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                    <span>Sindh</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'balochistan-home' %}">                    
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                    <span>Baluchistan</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'kpk-home' %}">                 
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                    <span>Khyber Pakhtunkhwa</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'gilgit-home' %}">                                      
+                    <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>      
+                    <span>Gilgit Baltistan</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+
+
+          <!-- Current hazards layers -->
+          <ul>
+            <li class="sidebar-dropdown">
+              <a >
+                <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                <span>Current hazards layers</span>
+              </a>
+              <div class="sidebar-submenu">
+                <ul>
+                  <li>
+                    <div class="checkboxes">
+              
+                      <!-- HTML -->
+                            <div class="checkboxes__row">
+                              <div class="checkboxes__item">
+                                  <label class="checkbox style-e">
+                                      <input type="checkbox" id="checkbox11"/>
+                                      <div class="checkbox__body">Floods</div>
+                                      <div class="checkbox__checkmark"></div>         
+                                  </label>
+                              </div>
+                            </div>
+                              <div class="checkboxes__row">
+                                <div class="checkboxes__item">
+                                    <label class="checkbox style-e">
+                                        <input type="checkbox" id="checkbox12"/>
+                                        <div class="checkbox__body">Glof</div>
+                                        <div class="checkbox__checkmark"></div>         
+                                    </label>
+                                </div>
+                            </div>
+                              <div class="checkboxes__row">
+                                <div class="checkboxes__item">
+                                  <label class="checkbox style-e">
+                                    <input type="checkbox" id="checkbox13"/>
+                                    <div class="checkbox__body">Landslide</div>
+                                    <div class="checkbox__checkmark"></div>
+                                    
+                                  </label>
+                                </div>
+                              </div>
+                              <div class="checkboxes__row">
+                                <div class="checkboxes__item">
+                                  <label class="checkbox style-e">
+                                    <input type="checkbox" id="checkbox14"/>
+                                    <div class="checkbox__body">Earthquake</div>
+                                    <div class="checkbox__checkmark"></div>
+                                    
+                                  </label>
+                                </div>
+                              </div>                             
+                      </div>
+            
+                  </li>
+                  
+                </ul>
+              </div>
+            </li>
+          </ul>
+
+
+         <!-- infrastructure layer -->
+         <ul>
+          <li class="sidebar-dropdown">
+            <a >
+              <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+              <span>Infrastructure layers</span>
+            </a>
+            <div class="sidebar-submenu">
+              <ul>
+                <li>
+                  <div class="checkboxes">
+             
+                    <!-- HTML -->
+                  <div class="checkboxes__row">
+                    <div class="checkboxes__item">
+                        <label class="checkbox style-e">
+                            <input type="checkbox" id="checkbox6"/>
+                            <div class="checkbox__body">Rescue-Stations</div>
+                            <div class="checkbox__checkmark"></div>         
+                        </label>
+                    </div>
+                  </div>
+                            <div class="checkboxes__row">
+                              <div class="checkboxes__item">
+                                  <label class="checkbox style-e">
+                                      <input type="checkbox" id="checkbox7"/>
+                                      <div class="checkbox__body">Health-Facilities</div>
+                                      <div class="checkbox__checkmark"></div>         
+                                  </label>
+                              </div>
+                          </div>
+                            <div class="checkboxes__row">
+                              <div class="checkboxes__item">
+                                <label class="checkbox style-e">
+                                  <input type="checkbox" id="checkbox8"/>
+                                  <div class="checkbox__body">Police-Stations</div>
+                                  <div class="checkbox__checkmark"></div>
+                                  
+                                </label>
+                              </div>
+                            </div>
+                            <div class="checkboxes__row">
+                              <div class="checkboxes__item">
+                                <label class="checkbox style-e">
+                                  <input type="checkbox" id="checkbox9"/>
+                                  <div class="checkbox__body">Bus-Stations</div>
+                                  <div class="checkbox__checkmark"></div>
+                                  
+                                </label>
+                              </div>
+                            </div>
+                            <div class="checkboxes__row">
+                              <div class="checkboxes__item">
+                                <label class="checkbox style-e">
+                                  <input type="checkbox" id="checkbox10"/>
+                                  <div class="checkbox__body">Fuel-Stations</div>
+                                  <div class="checkbox__checkmark"></div>
+                                  
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+          
+                </li>
+                
+              </ul>
+            </div>
+          </li>
+        </ul>
+
+        <!-- historical hazards layer -->
+        <ul>
+          <!-- <li class="header-menu">
+            <span>Historical Hazards layers</span>
+          </li>  
+           -->
+          <li class="sidebar-dropdown">
+            <a >
+              <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+              <span>Historical Hazards layers</span>
+            </a>
+            <div class="sidebar-submenu">
+              <ul>
+                <li>
+                  <div class="checkboxes">
+         
+                    <!-- HTML -->
+                  <div class="checkboxes__row">
+                    <div class="checkboxes__item">
+                        <label class="checkbox style-e">
+                            <input type="checkbox" id="checkbox1"/>
+                            <div class="checkbox__body">Earthquake</div>
+                            <div class="checkbox__checkmark"></div>         
+                        </label>
+                    </div>
+                  </div>
+          
+                  <!-- Modal -->
+                  <div class="modal fade" id="earthquakeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="earthquakeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="earthquakeModalLabel">Earthquake Form</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Earthquake Form -->
+                                <form id="earthquakeForm">
+                                    <div class="mb-3">
+                                        <label for="earthquakeMagnitude" class="form-label">Select Magnitude Range:</label>
+                                        <select class="form-select" id="earthquakeMagnitude" name="earthquakeMagnitude">
+                                            <option value="2.5-4.0">2.5 - 4.0</option>
+                                            <option value="4.0-6.0">4.0 - 6.0</option>
+                                            <option value="6.0-8.0">6.0 - 8.0</option>
+                                            <option value="8.0+">8.0 or above</option>
+                                            <!-- Add options for other ranges as needed -->
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" id="submitEarthquakeForm">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+          
+                    <div class="checkboxes__row">
+                      <div class="checkboxes__item">
+                          <label class="checkbox style-e">
+                              <input type="checkbox" id="checkbox2" data-bs-target="#floodmodal" data-bs-toggle="modal" />
+                              <div class="checkbox__body">Flood</div>
+                              <div class="checkbox__checkmark"></div>         
+                          </label>
+                      </div>
+                  </div>
+                  <!-- Modal -->
+                  <div class="modal fade" id="floodmodal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="floodmodalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                          <div class="modal-content">
+                              <div class="modal-header">
+                                  <h1 class="modal-title fs-5" id="floodmodalLabel">Flood Form</h1>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                  <!-- Flood Form -->
+                                  <form id="floodForm">
+                                    <div class="mb-3">
+                                        <label for="floodYear" class="form-label">Select Year:</label>
+                                        <select class="form-select" id="floodYear" name="floodYear">
+                                            <option value="2010">2010</option>
+                                            <option value="2011">2011</option>
+                                            <option value="2012">2012</option>
+                                            <option value="2013">2013</option>
+                                            <option value="2014">2014</option>
+                                            <option value="2015">2015</option>
+                                            <option value="2016">2016</option>
+                                            <option value="2017">2017</option>
+                                            <option value="2018">2018</option>
+                                            <option value="2019">2019</option>
+                                            <option value="2020">2020</option>
+                                            <option value="2021">2021</option>
+                                            <option value="2022">2022</option>
+                                            <option value="2023">2023</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2025">2025</option>
+          
+                                            <!-- Add options for other years as needed -->
+                                        </select>
+                                    </div>
+                                    <!-- Add other form fields as needed -->
+                                </form>
+                              </div>
+                              <div class="modal-footer">
+                                  <button type="button" class="btn btn-primary" id="submitFloodForm">Submit</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  
+                    <div class="checkboxes__row">
+                      <div class="checkboxes__item">
+                        <label class="checkbox style-e">
+                          <input type="checkbox" id="checkbox3"/>
+                          <div class="checkbox__body">Landslide</div>
+                          <div class="checkbox__checkmark"></div>
+                          
+                        </label>
+                      </div>
+                    </div>
+          
+                    <div class="checkboxes__row">
+                      <div class="checkboxes__item">
+                        <label class="checkbox style-e">
+                          <input type="checkbox" id="checkbox4" onchange="toggleGlofLayer()"/>
+                          <div class="checkbox__body">Glof</div>
+                          <div class="checkbox__checkmark"></div>
+                          
+                        </label>
+                      </div>
+                    </div>
+                    {% comment %} <div class="checkboxes__row">
+                      <div class="checkboxes__item">
+                        <label class="checkbox style-e">
+                          <input type="checkbox" id="checkbox5"/>
+                          <div class="checkbox__body">ForestFire</div>
+                          <div class="checkbox__checkmark"></div>
+                          
+                        </label>
+                      </div>
+                    </div> {% endcomment %}
+                  </div>
+          
+                </li>
+                
+              </ul>
+            </div>
+          </li>
+
+          
+        </ul>
+
+        
+      
+
+ 
+
+
+
+
+
+
+
+        <hr class="solid" style=" border-top: 4px solid white; ">
+       
+             <!-- geology layers  -->
+             <ul>           
+              <li class="sidebar-dropdown">
+                <a >
+                  <img src="{% static 'img\pak_map.png' %}" height="30" alt=""  style="  background: #3a3f48; border-radius: 5px;"/>
+                  <span>Geology layers</span>
+                </a>
+                <div class="sidebar-submenu">
+                  <ul>
+                    <li>
+                      <div class="map-overlay-items">
+                        <button id="Barrages">BARRAGES</button>
+                        <button id="headworks">HEADWORKS</button>
+                        <button id="Waterways_Polygons_Pakistan">WATERWAYS PAKISTAN</button>
+                        <button id="GlaciedAreas">GLACIIED AREAS</button>
+                        <button id="Vulnerable_Glacial_Lakes">VULNERABLE GLACIAL LAKES</button>
+                      </div>
+                 
+              
+                    </li>
+                    
+                  </ul>
+                </div>
+
+ 
+
+
+
+
+
+
+
+
+
+              </li>
+    
+              
+            </ul>
+        
+  
+     
+  
+  
+
+        
+
+      </div>
+      <!-- sidebar-menu  -->
+    </div>
+  </nav>
+  <!-- sidebar-wrapper  -->
+
+  <!-- Background video -->
+   <video id="background-video" autoplay loop muted playsinline>
+    <source src="{% static 'img/bgvideo.mp4' %}" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video> 
+  
+
+
+  <main class="page-content">
+    <!-- Main layout -->
+    <div class="main-content" style="margin-top: 65px; padding-left: 3%">
+  <ul class="nav nav-tabs" role="tablist" style="background: linear-gradient(to right, #135d66, #77b0aa);">
+    <li class="nav-item">
+      <a class="nav-link active" data-toggle="tab" href="#main-tab" role="tab" style=" font-weight: 700;">Main</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#vitualtour-tab" role="tab" style=" font-weight: 700;">Virtual Tour</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#officialcontacts-tab" role="tab" style=" font-weight: 700;">Official Contacts</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#windy-tab" role="tab" style=" font-weight: 700;">Windy Forecast</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#meteoblue-tab" role="tab" style=" font-weight: 700;">Meteoblue Forecast</a>
+    </li>
+   
+  </ul>
+  
+  <!-- Tab content -->
+  <div class="tab-content">
+    <div class="tab-pane active" id="main-tab" role="tabpanel">
+      <!-- Content for Main tab -->
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-9" id="mainContent" style="margin-top: 15px">
+            <div id="map">
+              
+              <div>
+                <button id="directions-button">Toggle Directions</button>
+                <!-- <button id="toggleButton">Toggle Weather</button> -->
+              </div>
+              
+            </div>
+           
+            <!-- Lower portion of the screen images + video -->
+            <div class="row">
+              <div class="col-lg-9" id="imageContent">
+                <div class="row" id="imageRow">
+                  <!-- Image placeholders will be dynamically added here -->
+                </div>
+              </div>          
+            </div>
+          </div>
+
+          <!-- Extra base maps selector -->
+          <div class="col-lg-3" style="padding-left: 40px">
+
+
+
+          
+            <!-- Weather card -->
+            <div class="card mb-4 mt-4" id="weather-card" style="min-height: 15%; background: linear-gradient(to right, #135d66, #77b0aa);">
+              <h2 style="text-decoration: underline; color: black;"><b>Weather Today</b></h2> 
+
+              <div id="weather-card">             
+                  <table style="color: black;">
+                    <tr>
+                      <td><b>City:</b></td>
+                      <td><b><span id="city"></span></b></td>
+                    </tr>
+                    <tr>
+                      <td><b>Description:</b></td>
+                      <td><b><span id="description" ></span></b></td>
+                    </tr>
+                    <tr>
+                      <td><b>Date & Time:</b></td>
+                      <td><b><span id="dt"></span></b></td>
+                    </tr>
+                    <tr>
+                      <td><b>Wind:</b></td>
+                      <td><b><span id="wind"></span></b></td>
+                    </tr>
+                    <tr>
+                      <td><b>Humidity:</b></td>
+                      <td><b><span id="humidity"></span></b></td>
+                    </tr>
+                    <tr>
+                      <td><b>Temperature:</b></td>
+                      <td><b><span id="temperature"></b></span></td>
+                    </tr>
+                    <tr>
+                      <td><b>Condition:</b></td>
+                      <td><b><i class="" id="condition"></b></i></td>
+                    </tr>
+                  </table>
+                  
+              </div>
+
+          </div>
+          <div class="card mb-4 mt-4" id="weather-card" style="min-height: 15%; background: linear-gradient(to right, #135d66, #77b0aa);">
+            <h2 style="text-decoration: underline; color: white;"><b>5-Days forcast</b></h2> 
+
+            <div id="forecast" class="forecast" style="color: white;"></div>
+
+        </div>
+          
+            <!-- <div id="videoContainer">
+              <div class="embed-responsive embed-responsive-21by9" id="videoColumn">
+                  <video controls autoplay class="embed-responsive-item" id="videoPlayer" style="height: 230px; width: 100%">
+                      
+                  </video>
+              </div>
+              <div id="closeButton">&times;</div>
+          </div> -->
+
+
+<!--           
+          <div id="alerts">
+            <div class="" id="alertsColumn">
+                <br>
+                <img src="{% static 'alerts/landslide25-29-april.png' %}" alt="Image Description" style="height: 280px; width: 350px; display: none;" id="animatedImage">
+            </div>
+        </div> -->
+        
+        
+        <div id="alerts">
+          <div class="" id="alertsColumn">
+              <br>
+              <img src="" alt="Image Description" style="height: 280px; width: 400px; display: none;" id="animatedImage">
+          </div>
+      </div>
+        
+
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="tab-pane" id="vitualtour-tab" role="tabpanel">
+       <!-- Content for vitualtour tab -->
+       <div class="row" style="padding-top: 2%;">
+        <div class="col-3">
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/15W4PLDYDfw?si=dMOL0sGcc-uQktPN" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/3VX2ka0ak1E?si=1ysvU524y3prxldc" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/PQMAWhVtGqM?si=ue6TlFOIwLEslda6" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/ExyCpYVtJpU?si=_eVPpuVMmpO9OX0D" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/41RDQj0d24Q?si=IwuV1vks2mUA8jGb" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/zepaVaOcLME?si=dvWe_RUyBscm0bcT" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/VxZBUfC2j3E?si=BP-GF-t20JW3q6fp" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/MYMnxR-DuPE?si=PX441CRZ-A3xGpWv" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/tXwloL2Skco?si=1uULd_YEbg5m2srF" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/2B3nvBbmMnk?si=jmfOg_WutLsqe7VF" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/eQ3tLm70p2g?si=LkAFL0cIZtbeXJ9q" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <br>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/Qx1UWrTVh0Y?si=pl0lm3yaQqL5UvUR" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+   
+    <div class="tab-pane" id="officialcontacts-tab" role="tabpanel">
+      <!-- Content for Official Contacts tab -->
+      <h2 style="color: white; align-content: center; margin-top: 30px; font-size: 20px;">Contact Information</h2>
+    <table style="background-color: #f2f2f2;">
+        <thead>
+            <tr>
+                <th>SR#</th>
+                <th>DEPARTMENT</th>
+                <th>CONTACT#</th>
+                <th>EMAIL</th>
+                <th>ADDRESS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Tourism Corporation of Khyber Pakhtunkhwa</td>
+                <td>9291-9211915</td>
+                <td>info@kptourism.com</td>
+                <td>2H54+GRG museum, Finance Department, Civil Secretariat, Peshawar, Khyber Pakhtunkhwa, Pakistan</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Police helpline</td>
+                <td>1915</td>
+                <td>ctopeshawar@ptpkp.gov.pk</td>
+                <td>Sahibzada Abdul Qayyum Road, Civil Secretariat Peshawar, Khyber Pakhtunkhwa, Pakistan</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Directorate of Tourist Services, Government of Khyber Pakhtunkhwa</td>
+                <td>0919-213000</td>
+                <td>dts.peshawar@gmail.com</td>
+                <td>DTS, 4th floor, FC trust building, Peshawar Cantt, Peshawar, Pakistan</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Rescue 1122</td>
+                <td>1122</td>
+                <td>ba.faizi786@gmail.com</td>
+                <td>near Peshawar press club, Peshawar, Pakistan</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>DC Office Peshawar</td>
+                <td>091-9212301</td>
+                <td>dcpeshawar@hotmail.com</td>
+                <td>Near Judicial Complex, Khyber Rd, PTCL Colony, Peshawar, Khyber Pakhtunkhwa</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Tourist Information Center - Khyber Pakhtunkhwan</td>
+              <td>051-2655614</td>
+              <td>dcpeshawar@hotmail.com</td>
+              <td>Parking lot, SIDB Plaza, Jinnah Super, F 7 Markaz F-7, Islamabad, Islamabad Capital Territory</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>National Disaster Management Authority (NDMA)</td>
+            <td>0300-0881641</td>
+            <td> info@ndma.gov.pk</td>
+            <td>M3JX+Q83 ERRA Complex, Murree Rd, opposite Margalla Town, Shakar Parian, Islamabad, Islamabad Capital Territory</td>
+        </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="tab-pane" id="windy-tab" role="tabpanel">
+      <!-- Content for windy tab -->
+      <iframe id="iframe" src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=6&overlay=wind&product=ecmwf&level=surface&lat=33.605&lon=73.035" frameborder="0" style="height: 90vh; width: 100%;"></iframe>
+    </div>
+    <div class="tab-pane" id="meteoblue-tab" role="tabpanel">
+      <!-- Content for windy tab -->
+      <iframe src="https://www.meteoblue.com/en/weather/maps/widget/pakistan_pakistan_11670554?windAnimation=0&windAnimation=1&gust=0&gust=1&satellite=0&satellite=1&cloudsAndPrecipitation=0&cloudsAndPrecipitation=1&temperature=0&temperature=1&sunshine=0&sunshine=1&extremeForecastIndex=0&extremeForecastIndex=1&geoloc=fixed&tempunit=C&windunit=km%252Fh&lengthunit=metric&zoom=5&autowidth=auto"  frameborder="0" scrolling="NO" allowtransparency="true" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox" style="height: 90vh; width: 100%;"></iframe><div>
+        <!-- DO NOT REMOVE THIS LINK -->
+       
+    </div>
+    </div>
+    
+    </div>
+  </div>
+    </div>
+
+
+
+
+
+  </main>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <!--Main layout-->
+  {% endblock content %} {% block script %}
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.10.2/umd/popper.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropdown.js/0.0.2dev/jquery.dropdown.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css">
+
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.3.1/mapbox-gl-directions.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.3.1/mapbox-gl-directions.css" type="text/css">
+ 
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" 
+integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" 
+crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+
+
+<script src="https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.umd.min.js"></script>
+    <link
+      href="https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.umd.js"></script>
+    <script src="https://cdn.maptiler.com/leaflet-maptilersdk/v2.0.0/leaflet-maptilersdk.js"></script>
+    
+    
+    <script src="https://cdn.maptiler.com/maptiler-weather/v1.1.0/maptiler-weather.umd.min.js"></script>
+
+    <!-- <script src="tourism-home.js"></script> -->
+    
+  
+
+    
+
+
+
+
+
+
+
+
+<script>
+ // Function to calculate the total width of all images
+function getTotalWidthOfImages() {
+    const imageContainer = document.querySelector('.image-container');
+    const images = imageContainer.querySelectorAll('img');
+    let totalWidth = 0;
+    images.forEach(img => {
+        totalWidth += img.offsetWidth + 10; // Include the margin between images
+    });
+    return totalWidth;
+}
+
+// Function to dynamically adjust the animation duration
+function adjustAnimationDuration() {
+    const imageContainer = document.querySelector('.image-container');
+    const totalWidth = getTotalWidthOfImages();
+    const numberOfImages = fetchPNGFiles().length;
+    const animationDuration = totalWidth / (numberOfImages * 50); // Adjust the divisor as needed
+    imageContainer.style.animationDuration = Math.max(animationDuration, 60) + 's'; // Ensure a minimum duration of 30 seconds
+}
+
+
+function fetchPNGFiles() {
+    // Assuming you have an array of PNG file names called pngFiles
+    const pngFiles = [
+      "file1.PNG", "file2.PNG", "file3.PNG", "file4.PNG", "file5.PNG", 
+      "file6.PNG", "file7.PNG", "file8.PNG", "file9.PNG", "file10.PNG", 
+      "file11.PNG", "file12.PNG", "file13.PNG", "file14.PNG", "file15.PNG", 
+      "file16.PNG", "file17.PNG", "file18.PNG", "file19.PNG", "file20.PNG", 
+      "file21.PNG", "file22.PNG", "file23.PNG", "file24.PNG", "file25.PNG"
+  ]; // Replace with actual file names
+    return pngFiles;
+}
+
+// Function to dynamically add PNG files to the modal body
+function addPNGFilesToModal() {
+    const modalBody = document.querySelector('.modal-body');
+    const imageContainer = document.querySelector('.image-container');
+    const pngFiles = fetchPNGFiles();
+
+    // Clear any existing content in the modal body
+    imageContainer.innerHTML = '';
+
+    // Loop through each PNG file and create img elements
+    pngFiles.forEach(fileName => {
+        const img = document.createElement('img');
+        img.src = '/static/advisory/' + fileName; // Concatenate the static URL prefix with the file name
+        img.alt = fileName;
+        img.classList.add('img-fluid'); // Optional: Add Bootstrap class for responsive images
+
+        // Add event listeners for mouseenter and mouseleave to pause and resume the animation
+        img.addEventListener('mouseenter', function () {
+            imageContainer.style.animationPlayState = 'paused';
+        });
+        img.addEventListener('mouseleave', function () {
+            imageContainer.style.animationPlayState = 'running';
+        });
+
+        // Append the img element to the image container
+        imageContainer.appendChild(img);
+    });
+
+    // Adjust animation duration after images are added
+    adjustAnimationDuration();
+}
+
+// Event listener for when the modal is shown
+document.getElementById('exampleModal').addEventListener('shown.bs.modal', function () {
+    addPNGFilesToModal();
+});
+
+
+
+
+
+</script>
+  <script>
+    $(".sidebar-dropdown > a").click(function () {
+      $(".sidebar-submenu").slideUp(200);
+      if ($(this).parent().hasClass("active")) {
+        $(".sidebar-dropdown").removeClass("active");
+        $(this).parent().removeClass("active");
+      } else {
+        $(".sidebar-dropdown").removeClass("active");
+        $(this).next(".sidebar-submenu").slideDown(200);
+        $(this).parent().addClass("active");
+      }
+    });
+
+    $("#close-sidebar").click(function () {
+      $(".page-wrapper").removeClass("toggled");
+    });
+    $("#show-sidebar").click(function () {
+      $(".page-wrapper").addClass("toggled");
+    });
+
+
+    // Trigger the modal popup when the document is ready
+    $(document).ready(function () {
+      $("#disastersButton").click(function () {
+        $("#disastersModal").modal("show");
+      });
+    });
+
+    // from index page click to the specific dropdown on this page
+    function toggleDropdown(dropdownId) {
+      var dropdownMenu = document.getElementById(dropdownId);
+      if (dropdownMenu.classList.contains("show")) {
+        dropdownMenu.classList.remove("show");
+      } else {
+        // Close all other dropdowns
+        var allDropdowns = document.querySelectorAll(".dropdown-menu");
+        allDropdowns.forEach(function (dropdown) {
+          dropdown.classList.remove("show");
+        });
+        // Open the clicked dropdown
+        dropdownMenu.classList.add("show");
+      }
+    }
+
+    // Function to toggle sidebar visibility and adjust main content padding
+    function toggleSidebar() {
+      var sidebar = document.getElementById("sidebarMenu");
+      var infographicCard = document.querySelector(".graphic-images-card");
+
+      if (sidebar.classList.contains("show")) {
+        sidebar.classList.remove("show");
+        infographicCard.classList.remove("move-right");
+      } else {
+        sidebar.classList.add("show");
+        infographicCard.classList.add("move-right");
+      }
+    }
+
+    document
+      .getElementById("sidenav-toggler")
+      .addEventListener("click", toggleSidebar);
+
+    // JavaScript for dropdown functionality
+    var dropdownToggles = document.querySelectorAll(".dropdown-toggle");
+    dropdownToggles.forEach(function (toggle) {
+      toggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        var dropdownMenu = toggle.nextElementSibling; // Get the next sibling element
+        // Toggle display of dropdown menu
+        dropdownMenu.style.display =
+          dropdownMenu.style.display === "block" ? "none" : "block";
+      });
+    });
+  </script>
+
+  <!-- --------------------------map layers------------------ -->
+  <script>
+    // Initialize Mapbox
+    mapboxgl.accessToken =
+      "pk.eyJ1IjoibmVvYzIwMjMiLCJhIjoiY2x1aTBubHAwMjYzOTJqcGc2cGFhMHU2ciJ9.tFU9_qFCY02qCvfiPMPDUg";
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        center: [70, 31],
+        zoom: 5,
+        pitch: 0,
+    });
+
+    
+  
+    // Add the control to the map.
+    map.addControl(
+        new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            countries: 'pk', // Restrict search to Pakistan
+        bbox: [60.88, 23.70, 79.84, 37.09] // Bounding box for Pakistan [minLon, minLat, maxLon, maxLat]
+        })
+    );
+
+
+
+
+    
+// ===================================
+
+let directionsControl = null;
+
+document.getElementById('directions-button').addEventListener('click', function() {
+    if (!directionsControl) {
+        directionsControl = new MapboxDirections({
+            accessToken: mapboxgl.accessToken,
+            bbox: [60.88, 23.70, 79.84, 37.09] // Bounding box for Pakistan [minLon, minLat, maxLon, maxLat]
+        });
+        map.addControl(directionsControl, 'top-left');
+    } else {
+        map.removeControl(directionsControl);
+        directionsControl = null;
+    }
+});
+// ===============================
+
+
+// ===============================
+// =======  streetview  start =======
+// ===============================
+  
+
+// ===============================
+// =======  streetview end =======
+// ===============================
+
+
+
+
+    // Optional: Add navigation control to the map
+    map.addControl(new mapboxgl.NavigationControl());
+    map.addControl(new mapboxgl.ScaleControl());
+
+
+    map.on("style.load", () => {
+      map.addSource("mapbox-dem", {
+        type: "raster-dem",
+        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+        tileSize: 512,
+        maxzoom: 14,
+      });
+      // add the DEM source as a terrain layer with exaggerated height
+      map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+    });
+
+
+// ===================  ====================
+
+
+function zoomToFeature(coordinates, zoomLevel) {
+    // console.log("Zooming to feature:", coordinates, "with zoom level:", zoomLevel);
+    map.easeTo({
+        center: coordinates,
+        zoom: zoomLevel,
+        pitch: 15,
+        bearing: -10,
+        duration: 1000,
+        essential: true
+    });
+}
+
+      //###################### tourist sopts of the specific province  #################
+    
+map.on("load", function () {
+  // ------------ national boundaries ------------
+    map.addSource("national-boundary", {
+      type: "geojson",
+      data: "/static/data/national_boundary/provincial_boundary.geojson",
+    });
+
+  // Add a layer to render the GeoJSON data
+  map.addLayer({
+    id: "national-boundary-layer",
+    type: "line", // Change the type according to the geometry of your GeoJSON features
+    source: "national-boundary",
+    paint: {
+      "line-color": "black", // Adjust the line color as needed
+      "line-width": 2, // Adjust the line width as needed
+    },
+  });
+
+// ------------ national boundaries ------------
+    map.addSource("places", {
+        type: "geojson",
+        data: '{% static "data/tourist_sites-new/tourist_spots.geojson" %}',
+    });
+
+    map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "places",
+        filter: ["has", "point_count"],
+        paint: {
+            "circle-color": [
+                "step",
+                ["get", "point_count"],
+                "#51bbd6",
+                100,
+                "#f1f075",
+                750,
+                "#f28cb1",
+            ],
+            "circle-radius": [
+                "step",
+                ["get", "point_count"],
+                20,
+                100,
+                30,
+                750,
+                40,
+            ],
+        },
+    });
+
+    map.addLayer({
+        id: "unclustered-point",
+        type: "circle",
+        source: "places",
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+            "circle-color": "#11b4da",
+            "circle-radius": 8,
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#fff",
+        },
+    });
+
+  
+
+    map.on("click", "clusters", function (e) {
+    console.log("Cluster clicked:", e);
+    var features = map.queryRenderedFeatures(e.point, {
+        layers: ["clusters"],
+    });
+    console.log("Rendered features:", features);
+    var clusterId = features[0].properties.cluster_id;
+    console.log("Cluster ID:", clusterId);
+    map.getSource("places").getClusterExpansionZoom(clusterId, function (err, zoom) {
+        if (err) {
+            console.error("Error getting cluster expansion zoom:", err);
+            return;
+        }
+        console.log("Cluster expansion zoom:", zoom);
+        var coordinates = features[0].geometry.coordinates;
+        console.log("Cluster coordinates:", coordinates);
+        zoomToFeature(coordinates, zoom);
+    });
+});
+
+    map.on("click", "unclustered-point", function (e) {
+      console.log("Unclustered point clicked:", e);
+      var coordinates = e.features[0].geometry.coordinates.slice();
+      var properties = e.features[0].properties;
+      var spot = properties._key; // Assuming spot name is stored in _key property
+
+      // Fetch video URL for the spot
+      var videoUrl = fetchImagesAndVideos(spot);
+
+      // Fetch and display weather for the spot
+        fetchAndDisplayWeather(properties.tehsil);
+
+      // Rest of your code for displaying popup, zooming, etc.
+      var popupContent = "<h3>" + properties._key + "</h3>";
+      if (properties.District) {
+          popupContent += "<p><strong>District:</strong> " + properties.District + "</p>";
+      }
+
+    popupContent +=
+        '<h5 class="card-title" style="color: white; text-decoration: underline;">Location Description</h5>' +
+        '<p class="card-text" style="color: black;">' +
+        properties.Desc +
+        "</p>" +
+        '<div><video src="' + videoUrl + '" controls autoplay style="width: 100%;"></video></div>'; // Embed video directly into the popup
+
+    var popup = new mapboxgl.Popup()
+      .setLngLat(coordinates)
+      .setHTML(popupContent)
+      .addTo(map);
+
+    map.easeTo({
+      center: coordinates,
+      zoom: 7,
+    });
+});
+
+
+function fetchImagesAndVideos(spot) {
+    console.log("Fetching images and videos for spot:", spot);
+    var folderPath = `../static/data/province-wise-images_videos/kpk/${spot}/`;
+
+    var imageNames = ["1.jpg", "2.jpg", "3.jpg", "4.jpg"];
+
+    var imageRow = document.getElementById("imageRow");
+    imageRow.innerHTML = "";
+
+    imageNames.forEach(function (imageName, index) {
+        var img = document.createElement("img");
+        img.src = folderPath + imageName;
+        img.classList.add(
+          "card-img-top",
+          "img-fluid",
+          "clickable-image",
+          "zoom-in"
+        );
+        img.style.height = "200px";
+        img.style.width = "290px";
+
+        var card = document.createElement("div");
+        card.classList.add("mb-4", "mt-2", "col-lg-3");
+
+        card.appendChild(img);
+
+        imageRow.appendChild(card);
+    });
+
+   // Assume video is always named "video.mp4"
+   var videoUrl = folderPath + "video.mp4";
+
+return videoUrl;
+}
+
+function fetchAndDisplayWeather(tehsil) {
+    console.log("Fetching weather for tehsil:", tehsil);
+    var apiKey = "d1fff595a3d0d52c3beb4372cf19ab2e"; // Replace with your OpenWeatherMap API key
+    var currentWeatherUrl = `//api.openweathermap.org/data/2.5/weather?q=${tehsil}&appid=${apiKey}&units=metric`;
+    var forecastUrl = `//api.openweathermap.org/data/2.5/forecast?q=${tehsil}&appid=${apiKey}&units=metric`;
+
+    fetch(currentWeatherUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Current Weather Data:", data); // Log the current weather data
+            displayCurrentWeather(data);
+        })
+        .catch(error => {
+            console.error('Error fetching current weather data:', error);
+        });
+
+    fetchForecast(forecastUrl);
+}
+
+function displayCurrentWeather(data) {
+    if (data && data.cod !== '404') {
+        var cityElement = document.getElementById("city");
+        var descriptionElement = document.getElementById("description");
+        var dtElement = document.getElementById("dt");
+        var windElement = document.getElementById("wind");
+        var humidityElement = document.getElementById("humidity");
+        var temperatureElement = document.getElementById("temperature");
+        var conditionElement = document.getElementById("condition");
+        var weatherCard = document.getElementById("weather-card");
+
+        cityElement.textContent = data.name;
+        descriptionElement.textContent = titleCase(data.weather[0].description);
+        dtElement.textContent = getDateTime(data.dt);
+        windElement.textContent = "Wind: " + data.wind.speed + " m/s";
+        humidityElement.textContent = "Humidity: " + data.main.humidity + "%";
+        temperatureElement.textContent = data.main.temp + "°C";
+        conditionElement.className = getWeatherIcon(data.weather[0].icon);
+
+        var weatherCard = document.getElementById("weather-card");
+        weatherCard.style.backgroundImage = "url('{% static 'img/weatherimages/' %}" + data.weather[0].icon + ".png')";
+        weatherCard.style.backgroundRepeat = "no-repeat";
+        weatherCard.style.backgroundSize = "cover";
+        weatherCard.style.opacity = "0.8";
+
+        weatherCard.style.display = "block";
+    } else {
+        console.error('Tehsil not found or API request failed:', data.message);
+    }
+}
+
+function fetchForecast(forecastUrl) {
+    fetch(forecastUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Forecast Data:", data); // Log the forecast data
+            displayForecast(data);
+        })
+        .catch(error => {
+            console.error('Error fetching forecast data:', error);
+        });
+}
+
+function displayForecast(data) {
+    if (data && data.cod !== '404') {
+        var forecasts = data.list.filter((forecast, index) => index % 8 === 0);
+
+        var forecastElement = document.getElementById("forecast");
+        forecastElement.innerHTML = "";
+
+        var table = document.createElement("table");
+        table.classList.add("forecast-table");
+
+        var headerRow = document.createElement("tr");
+        var headerDay = document.createElement("th");
+        headerDay.textContent = "Day";
+        headerRow.appendChild(headerDay);
+        var headerTemperature = document.createElement("th");
+        headerTemperature.textContent = "Temperature (°C)";
+        headerRow.appendChild(headerTemperature);
+        var headerIcon = document.createElement("th");
+        headerIcon.textContent = "Weather";
+        headerRow.appendChild(headerIcon);
+        table.appendChild(headerRow);
+
+        forecasts.forEach(forecast => {
+            var forecastDate = new Date(forecast.dt * 1000);
+            var forecastDay = forecastDate.toLocaleString('en-US', { weekday: 'long' });
+            var forecastTemperature = forecast.main.temp;
+            var forecastIcon = getWeatherIcon(forecast.weather[0].icon);
+
+            var row = document.createElement("tr");
+
+            var dayCell = document.createElement("td");
+            dayCell.textContent = forecastDay;
+            row.appendChild(dayCell);
+
+            var temperatureCell = document.createElement("td");
+            temperatureCell.textContent = forecastTemperature + "°C";
+            row.appendChild(temperatureCell);
+
+            var iconCell = document.createElement("td");
+            var forecastIconElement = document.createElement("i");
+            forecastIconElement.classList.add("wi", forecastIcon);
+            iconCell.appendChild(forecastIconElement);
+            row.appendChild(iconCell);
+
+            table.appendChild(row);
+        });
+
+        forecastElement.appendChild(table);
+    } else {
+        console.error('Forecast data not found or API request failed:', data.message);
+    }
+}
+
+
+
+
+function titleCase(str) {
+    return str.split(" ").map(word => word[0].toUpperCase() + word.substring(1)).join(" ");
+}
+
+function getDateTime(unixTimestamp) {
+    var date = new Date(unixTimestamp * 1000);
+    var options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        timeZoneName: 'short'
+    };
+    return date.toLocaleString('en-US', options);
+}
+
+function getWeatherIcon(iconCode) {
+  switch (iconCode) {
+      case "01d":
+          return "wi-day-sunny";
+      case "02d":
+          return "wi-day-sunny-overcast";
+      case "01n":
+          return "wi-night-clear";
+      case "02n":
+          return "wi-night-partly-cloudy";
+      case "03d":
+      case "03n":
+          return "wi-cloud";
+      case "04d":
+      case "04n":
+          return "wi-cloudy";
+      case "09d":
+      case "09n":
+          return "wi-showers";
+      case "10d":
+      case "10n":
+          return "wi-rain";
+      case "11d":
+      case "11n":
+          return "wi-thunderstorm";
+      case "13d":
+      case "13n":
+          return "wi-snow";
+      case "50d":
+      case "50n":
+          return "wi-fog";
+      default:
+          return "wi-day-sunny";
+  }
+}
+
+ // -----------The 'building' layer in the Mapbox Streets---------------
+     // Insert the layer beneath any symbol layer.
+  const layers = map.getStyle().layers;
+        const labelLayerId = layers.find(
+          (layer) => layer.type === "symbol" && layer.layout["text-field"]
+        ).id;
+
+        // The 'building' layer in the Mapbox Streets
+        // vector tileset contains building height data
+        // from OpenStreetMap.
+        map.addLayer(
+          {
+            id: "add-3d-buildings",
+            source: "composite",
+            "source-layer": "building",
+            filter: ["==", "extrude", "true"],
+            type: "fill-extrusion",
+            minzoom: 14,
+            paint: {
+              "fill-extrusion-color": "#aaa",
+              // Use an 'interpolate' expression to
+              // add a smooth transition effect to
+              // the buildings as the user zooms in.
+              "fill-extrusion-height": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                15,
+                0,
+                15.05,
+                ["get", "height"],
+              ],
+              "fill-extrusion-base": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                15,
+                0,
+                15.05,
+                ["get", "min_height"],
+              ],
+              "fill-extrusion-opacity": 1,
+            },
+          },
+          labelLayerId
+        );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+    map.on("mouseenter", "clusters", function () {
+        map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "clusters", function () {
+        map.getCanvas().style.cursor = "";
+    });
+    map.on("mouseenter", "unclustered-point", function () {
+        map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "unclustered-point", function () {
+        map.getCanvas().style.cursor = "";
+    });
+});
+
+
+
+
+
+
+
+  
+
+
+
+
+
+//###################### current hazards start #################
+
+  // ---------- flood station starts---------
+// Function to format date components (e.g., adding leading zeros)
+function formatDate(value) {
+    return value < 10 ? `0${value}` : value.toString();
+}
+
+// Function to get month name
+function getMonthName(date) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[date.getMonth()];
+}
+
+function getAlertImagePath(date) {
+    const currentDate = new Date(date.toDateString()); // Remove time component from date
+    const formattedDate = formatDate(currentDate); // Format the date
+    const monthName = getMonthName(currentDate); // Get month name
+
+    // Check if the current date falls within the range specified in the image name
+    if (isDateInRange(currentDate, '2024-06-01', '2024-06-30')) {
+        const fileName = `flood_2024-06-01_2024-06-30_june.png`; // Image file name
+        const imagePath = `/static/alerts/${fileName}`; // Construct image path
+        console.log('Image path:', imagePath);
+        return imagePath;
+    } else {
+        // If the current date is not within the range, return null or an empty string
+        return null; // Or return an empty string: return '';
+    }
+}
+
+// Function to check if the current date falls within the specified range
+function isDateInRange(date, startDateStr, endDateStr) {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    return date >= startDate && date <= endDate;
+}
+
+
+// Load GeoJSON data and add layer to the map
+map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file 
+    fetch("/static/data/advisorygeojson/flood_01may-08may.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('advisorygeojsonflood', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map
+            map.addLayer({
+                id: 'advisorygeojsonflood',
+                type: 'fill', // Change type to 'fill' to represent polygons
+                source: 'advisorygeojsonflood',
+                paint: {
+                    'fill-color': 'blue', // Adjust the fill color as needed
+                    'fill-opacity': 0.8 // Adjust the fill opacity as needed
+                },
+                layout: {
+                    'visibility': 'none' // Set initial visibility to 'visible'
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+});
+
+// Toggle layer visibility based on checkbox state
+const layerToggle = document.getElementById('checkbox11'); // Assuming you have a checkbox with id 'checkbox11'
+layerToggle.addEventListener('change', () => {
+    if (layerToggle.checked) {
+        map.setLayoutProperty('advisorygeojsonflood', 'visibility', 'visible');
+        console.log('Layer visibility toggled: visible');
+        const imagePath = getAlertImagePath(new Date()); // Pass new Date() to use the current date
+        console.log('Image path:', imagePath); // Debug line
+        const animatedImage = document.getElementById('animatedImage');
+        animatedImage.src = imagePath;
+        animatedImage.style.display = 'block'; // Show the image
+    } else {
+        map.setLayoutProperty('advisorygeojsonflood', 'visibility', 'none');
+        console.log('Layer visibility toggled: none');
+        const animatedImage = document.getElementById('animatedImage');
+        animatedImage.style.display = 'none'; // Hide the image
+    }
+});
+
+// Add popup on click
+map.on('click', 'advisorygeojsonflood', (e) => {
+    console.log('Feature clicked:', e.features[0]);
+    const properties = e.features[0].properties;
+    const coordinates = e.features[0].geometry.coordinates.slice();
+    let popupContent = '<h3>' + properties.name + '</h3>';
+    new mapboxgl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(popupContent)
+        .addTo(map);
+});
+
+// Display the alert image
+const animatedImage = document.getElementById('animatedImage');
+
+// Add click event listener to the image
+animatedImage.addEventListener('click', function() {
+    if (!isCentered) {
+        centerImage(); // Center the image if not already centered
+    } else {
+        resetImagePosition(); // Return the image to its original position if already centered
+    }
+});
+
+// Function to center the image
+function centerImage() {
+    animatedImage.style.position = 'fixed';
+    animatedImage.style.top = '50%';
+    animatedImage.style.left = '50%';
+    animatedImage.style.transform = 'translate(-50%, -50%)';
+    animatedImage.style.zIndex = '9999'; // Ensure it's above other content
+    animatedImage.style.height = '900px'; // Adjust as needed
+    animatedImage.style.width = '1200px'; // Adjust as needed
+    isCentered = true;
+}
+
+// Function to return the image to its original position
+function resetImagePosition() {
+    animatedImage.style.position = 'static';
+    animatedImage.style.top = 'auto';
+    animatedImage.style.left = 'auto';
+    animatedImage.style.transform = 'none';
+    animatedImage.style.height = '280px'; // Adjust as needed
+    animatedImage.style.width = '350px'; // Adjust as needed
+    isCentered = false;
+}
+
+// Initialize isCentered variable
+let isCentered = false;
+
+
+  // ---------- flood station ends---------
+
+
+// ------------ GLOF current hazards START --------
+
+// // Load GeoJSON data and add layer to the map
+// map.on('load', () => {
+//     console.log('Map loaded');
+
+//     // Load GeoJSON data from a static file 
+//     fetch("/static/data/glof-geojson/GLOF_Zones.geojson")
+//         .then(response => response.json())
+//         .then(data => {
+//             console.log('GeoJSON data loaded:', data);
+
+//             // Add the GeoJSON data as a source to the map
+//             map.addSource('advisorygeojsonglof', {
+//                 type: 'geojson',
+//                 data: data
+//             });
+
+//             // Add a layer to the map
+//             map.addLayer({
+//                 id: 'advisorygeojsonglof',
+//                 type: 'fill', // Change type to 'fill' to represent polygons
+//                 source: 'advisorygeojsonglof',
+//                 paint: {
+//                     'fill-color': 'red', // Adjust the fill color as needed
+//                     'fill-opacity': 0.8 // Adjust the fill opacity as needed
+//                 },
+//                 layout: {
+//                     'visibility': 'none' // Set initial visibility to 'visible'
+//                 }
+//             });
+
+//             console.log('Layer added');
+//         })
+//         .catch(error => {
+//             console.error('Error loading GeoJSON:', error);
+//         });
+// });
+
+// // Toggle layer visibility based on checkbox state
+// const gloflayerToggle = document.getElementById('checkbox12'); // Assuming you have a checkbox with id 'checkbox11'
+// gloflayerToggle.addEventListener('change', () => {
+//     if (gloflayerToggle.checked) {
+//         map.setLayoutProperty('advisorygeojsonglof', 'visibility', 'visible');
+//         console.log('Layer visibility toggled: visible');
+//     } else {
+//         map.setLayoutProperty('advisorygeojsonglof', 'visibility', 'none');
+//         console.log('Layer visibility toggled: none');
+      
+//     }
+// });
+
+// Ensure the map has finished loading its style before adding sources and layers
+map.on('style.load', () => {
+    console.log('Map style loaded');
+
+    // Fetch GeoJSON data
+    fetch("/static/data/glof-geojson/badswat.geojson")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('advisorygeojsonglof', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map
+            map.addLayer({
+                id: 'advisorygeojsonglof',
+                type: 'fill', // Represent polygons with fill
+                source: 'advisorygeojsonglof',
+                paint: {
+                    'fill-color': 'red', // Adjust the fill color
+                    'fill-opacity': 0.8 // Adjust the fill opacity
+                },
+                layout: {
+                    'visibility': 'visible' // Set initial visibility to 'none'
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+});
+
+// Toggle layer visibility based on checkbox state
+const gloflayerToggle = document.getElementById('checkbox12'); // Ensure the ID matches
+gloflayerToggle.addEventListener('change', () => {
+    const visibility = gloflayerToggle.checked ? 'visible' : 'none';
+    map.setLayoutProperty('advisorygeojsonglof', 'visibility', visibility);
+    console.log(`Layer visibility toggled: ${visibility}`);
+});
+
+
+
+
+// -----------GLof current hazards end ----------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //$$$$$$$$$$$$$$$$$$$$$ HIstrorical Hazards  $$$$$$$$$$$$$$$$$$$$
+
+  //###################### earthquake events area start ############
+  document.addEventListener('DOMContentLoaded', function () {
+    const checkbox = document.getElementById('checkbox1');
+    const modal = new bootstrap.Modal(document.getElementById('earthquakeModal'));
+    const form = document.getElementById('earthquakeForm');
+    const submitButton = document.getElementById('submitEarthquakeForm');
+
+    // Event listener for checkbox change
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            modal.show(); // Show modal if checkbox is checked
+        } else {
+            // Remove earthquake layer if checkbox is unchecked
+            removeEarthquakeLayer();
+        }
+    });
+
+    // Event listener for form submission
+    submitButton.addEventListener('click', function () {
+        // Prevent default form submission
+        event.preventDefault();
+
+        // Get selected magnitude range from the form
+        const magnitudeRange = document.getElementById('earthquakeMagnitude').value;
+        const minMagnitude = parseFloat(magnitudeRange.split('-')[0]);
+        const maxMagnitude = parseFloat(magnitudeRange.split('-')[1]);
+
+        // Fetch GeoJSON data and filter based on magnitude range
+        fetch('{% static "data/earthquake-geojson/eq_data_events.geojson" %}')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const filteredData = data.features.filter(feature => {
+                    const magnitude = parseFloat(feature.properties.Magnitude);
+                    return magnitude >= minMagnitude && magnitude <= maxMagnitude;
+                });
+
+                // Add filtered data to the map
+                addEarthquakeLayer(filteredData);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        // Close the modal after form submission
+        modal.hide();
+    });
+
+    // Function to add earthquake layer to the map
+    function addEarthquakeLayer(filteredData) {
+        // Implement code to add filtered data to the map
+        // Ensure that the map variable is accessible here
+        // Example:
+        map.addSource('earthquakes', {
+            type: 'geojson',
+            data: {
+                type: 'FeatureCollection',
+                features: filteredData
+            }
+        });
+
+        // Load the earthquake icon image
+        map.loadImage('{% static "img\mapbox-icons\gdacs\Red-EQ.png" %}', function (error, image) {
+            if (error) throw error;
+            
+            // Add the image to the map
+            map.addImage("earthquake-icon", image);
+
+            // Add the earthquake layer
+            map.addLayer({
+                id: 'earthquakes-point',
+                type: 'symbol',
+                source: 'earthquakes',
+                layout: {
+                    'icon-image': 'earthquake-icon', // Name of the loaded image
+                    'icon-size': 0.5, // Adjust the size of the image markers
+                    'icon-allow-overlap': false, // Allow icons to overlap
+                    'icon-anchor': 'bottom', // Anchor point of the icon
+                },
+            });
+        });
+    }
+
+    // Event listener for when the map is loaded
+    map.on('load', function () {
+        // When an earthquake point is clicked, display its properties
+        map.on("click", "earthquakes-point", function (e) {
+            console.log("Clicked on earthquake point");
+            var features = e.features;
+            if (!features || !features.length) return;
+
+            var properties = features[0].properties;
+            var coordinates = e.lngLat; // Get the coordinates of the clicked point
+            console.log("Earthquake properties:", properties);
+            displayEarthquakeData(properties, coordinates); // Pass coordinates to the function
+        });
+
+        // Change the cursor to a pointer when hovering over the earthquake points
+        map.on("mouseenter", "earthquakes-point", function () {
+            map.getCanvas().style.cursor = "pointer";
+        });
+
+        // Change it back to the default cursor when the mouse leaves the earthquake points
+        map.on("mouseleave", "earthquakes-point", function () {
+            map.getCanvas().style.cursor = "";
+        });
+    });
+
+    // Function to display earthquake data in a table inside the popup
+    function displayEarthquakeData(properties, coordinates) {
+        console.log("Displaying earthquake data:", properties);
+        // Create HTML content for the table
+        var tableHTML = '<table>';
+        Object.keys(properties).forEach((property) => {
+            tableHTML += '<tr><td>' + property + '</td><td>' + properties[property] + '</td></tr>';
+        });
+        tableHTML += '</table>';
+
+        // Create a new Popup object
+        var popup = new mapboxgl.Popup()
+            .setLngLat(coordinates) // Set coordinates for the popup
+            .setHTML(tableHTML)
+            .addTo(map);
+    }
+
+    // Get the checkbox element
+    const earthquakeCheckbox = document.getElementById("checkbox1");
+
+    // Event listener to toggle the layer visibility when the checkbox is clicked
+    earthquakeCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+            // If the checkbox is checked, show the layer
+            map.setLayoutProperty("earthquakes-point", "visibility", "visible");
+        } else {
+            // If the checkbox is unchecked, hide the layer
+            map.setLayoutProperty("earthquakes-point", "visibility", "none");
+        }
+    });
+});
+
+// Function to remove earthquake layer from the map
+function removeEarthquakeLayer() {
+    // Implement code to remove earthquake layer from the map
+    // Example:
+    if (map.getLayer('earthquakes-point')) {
+        map.removeLayer('earthquakes-point');
+    }
+    if (map.getSource('earthquakes')) {
+        map.removeSource('earthquakes');
+    }
+}
+
+
+    //###################### earthquake events area ends ############
+
+
+
+
+
+  //###################### flood start  #################
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const floodCheckbox = document.getElementById("checkbox2");
+    
+    // Event listener to show the modal when the checkbox is checked
+    floodCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            // If the checkbox is checked, show the modal
+            $('#floodmodal').modal('show');
+        } else {
+            // If the checkbox is unchecked, hide the modal and the layer
+            $('#floodmodal').modal('hide');
+            hideLayer("flood");
+        }
+    });
+
+    // Event listener to submit the flood form
+    const submitFloodFormBtn = document.getElementById("submitFloodForm");
+    submitFloodFormBtn.addEventListener('click', function() {
+        // Handle form submission logic here
+        // For example, you can retrieve form data and perform an action
+        const selectedYear = document.getElementById("floodYear").value;
+        console.log("Selected Year:", selectedYear);
+        // You can add further logic to submit the form data
+        
+        // Display the layer on the map
+        displayLayer("flood", selectedYear);
+
+        // Hide the modal after form submission
+        $('#floodmodal').modal('hide');
+    });
+
+    // Initialize the modal manually
+    var floodModal = new bootstrap.Modal(document.getElementById('floodmodal'));
+});
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function displayLayer(layer, year) {
+    console.log("Displaying layer:", layer);
+    console.log("Selected year:", year);
+
+    // Capitalize the layer name
+    const capitalizedLayer = capitalize(layer);
+    console.log("Capitalized layer:", capitalizedLayer);
+
+    // Construct the URL for the GeoJSON data based on the selected layer and year
+    const sourceUrl = `/static/data/${layer}-geojson/${capitalizedLayer} Extent_${year}.geojson`;
+    console.log("Source URL:", sourceUrl);
+
+    // Check if a source with the same ID already exists, and remove it if so
+    if (map.getSource(layer)) {
+        map.removeSource(layer);
+        console.log("Existing source removed:", layer);
+    }
+
+    // Add the source to the map
+    map.addSource(layer, {
+        type: "geojson",
+        data: sourceUrl,
+    });
+    console.log("Source added to map:", layer);
+
+    // Check if a layer with the same ID already exists, and remove it if so
+    if (map.getLayer(`${layer}-polygon`)) {
+        map.removeLayer(`${layer}-polygon`);
+        console.log("Existing layer removed:", `${layer}-polygon`);
+    }
+
+    // Add the layer to the map
+    map.addLayer({
+        id: `${layer}-polygon`,
+        type: "fill",
+        source: layer,
+        paint: {
+            "fill-color": "red",
+            "fill-opacity": 0.5,
+        },
+        layout: {
+            visibility: "visible", // Show the layer by default
+        },
+    });
+    console.log("Layer added to map:", `${layer}-polygon`);
+}
+
+function hideLayer(layer) {
+    // Check if the layer exists before removing it
+    if (map.getLayer(`${layer}-polygon`)) {
+        map.removeLayer(`${layer}-polygon`);
+    }
+
+    // Check if the source exists before removing it
+    if (map.getSource(layer)) {
+        map.removeSource(layer);
+    }
+}
+
+//###################### flood ends  #################  
+
+
+//==================GLOF starts==============
+
+/// Function to add GLOF layer
+function addGlofLayer() {
+    // Add GLOF GeoJSON data source
+    map.addSource("glof-sites", {
+        type: "geojson",
+        data: '{% static "data/Geojeson_GLOF/GLOF_sites.geojson" %}',
+    });
+
+    // Add image to the map
+    map.loadImage('{% static "img\mapbox-icons\gdacs\Orange-FL.png" %}', function (error, image) {
+        if (error) throw error;
+        map.addImage("glacier", image); // Add the loaded image with the name "glacier"
+        
+        // Add GLOF layer
+        map.addLayer({
+            id: "glof-sites",
+            type: "symbol", // Change layer type to symbol for using an image
+            source: "glof-sites",
+            layout: {
+                "icon-image": "glacier", // Image name without file extension
+                'icon-size': 1.3, // Adjust the size of the image markers
+                'icon-allow-overlap': false, // Allow icons to overlap
+                'icon-anchor': 'bottom', // Anchor point of the icon
+            },
+        });
+
+        // Start blinking spots
+        // blinkSpots();
+    });
+}
+
+// Function to remove GLOF layer
+function removeGlofLayer() {
+    // Remove GLOF layer
+    map.removeLayer("glof-sites");
+    map.removeSource("glof-sites");
+}
+
+// Function to toggle GLOF layer visibility based on checkbox state
+function toggleGlofLayer() {
+    var checkbox = document.getElementById("checkbox4");
+    if (checkbox.checked) {
+        // If checkbox is checked, show the GLOF layer
+        addGlofLayer();
+    } else {
+        // If checkbox is unchecked, hide the GLOF layer
+        removeGlofLayer();
+    }
+}
+
+// Event listener for checkbox state change
+document.getElementById("checkbox4").addEventListener("change", toggleGlofLayer);
+
+//================== Glof Ends ================
+
+//================== landslides start ================
+
+map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data
+    fetch("/static/data/landslide/landslide_points.geojson")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('landslide_points', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'landslide_points',
+                type: 'circle',
+                source: 'landslide_points',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#FF0000', // Red color for the points
+                    'circle-opacity': 0.8
+                },
+                layout: {
+                    'visibility': 'none' // Set initial visibility to 'none'
+                }
+            });
+
+            console.log('Layer added');
+
+            // Event listener to toggle layer visibility based on checkbox state
+            const layerToggle = document.getElementById('checkbox3');
+            layerToggle.addEventListener('change', () => {
+                if (layerToggle.checked) {
+                    console.log('Toggling layer visibility: visible');
+                    map.setLayoutProperty('landslide_points', 'visibility', 'visible');
+                } else {
+                    console.log('Toggling layer visibility: none');
+                    map.setLayoutProperty('landslide_points', 'visibility', 'none');
+                }
+            });
+
+            // Event listener for displaying popup on click
+            map.on('click', 'landslide_points', (e) => {
+                console.log('Feature clicked:', e.features[0]);
+
+                const properties = e.features[0].properties;
+                const coordinates = e.features[0].geometry.coordinates.slice();
+
+                // Format the coordinates to display in the popup
+                const formattedCoordinates = coordinates.map(coord => coord.toFixed(6)).join(', ');
+
+                let popupContent = '<h3>' + properties.Name + '</h3>'; // Assuming 'Name' is the property containing the name of the location
+                popupContent += '<p>Coordinates: ' + formattedCoordinates + '</p>';
+
+                new mapboxgl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(popupContent)
+                    .addTo(map);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    console.log('Event listeners added');
+});
+
+//================== landslides Ends ================
+
+
+// $$$$$$$$$$$$$$$$$$ infrastructure layer $$$$$$$$$$$
+
+// ---------------rescue stations-----------
+map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file
+    fetch("/static/data/Infrastructure/rescue_stations.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('rescue_stations', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'rescue_stations',
+                type: 'symbol',
+                source: 'rescue_stations',
+                layout: {
+                    'icon-image': 'hospital',
+                    'icon-allow-overlap': false,
+                    'visibility': 'none', // Set initial visibility to 'none
+                    'icon-size': 1.4,
+                },
+                
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    // Toggle layer visibility based on checkbox state
+    const layerToggle = document.getElementById('checkbox6');
+    layerToggle.addEventListener('change', () => {
+        if (layerToggle.checked) {
+            map.setLayoutProperty('rescue_stations', 'visibility', 'visible');
+            console.log('Layer visibility toggled: visible');
+        } else {
+            map.setLayoutProperty('rescue_stations', 'visibility', 'none');
+            console.log('Layer visibility toggled: none');
+        }
+    });
+
+
+    // Add popup on click
+    map.on('click', 'rescue_stations', (e) => {
+      console.log('Feature clicked:', e.features[0]);
+
+      const properties = e.features[0].properties;
+      const coordinates = e.features[0].geometry.coordinates.slice();
+
+      let popupContent = '<h3>' + properties.Name + '</h3>';
+      popupContent += '<p>District: ' + properties.District + '</p>';
+      popupContent += '<p>Province: ' + properties.Province + '</p>';
+      popupContent += '<p>Country: ' + properties.Country + '</p>';
+      popupContent += '<p>Address: ' + properties.Address + '</p>';
+      popupContent += '<p>Category: ' + properties.Category + '</p>';
+
+      new mapboxgl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(popupContent)
+        .addTo(map);
+    });
+
+    // Change the cursor to a pointer when hovering over the layer.
+    map.on('mouseenter', 'rescue_stations', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+
+    // Change it back to a pointer when it leaves.
+    map.on('mouseleave', 'rescue_stations', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    console.log('Event listeners added');
+  });
+   // ---------------rescue stations end-----------
+
+   // --------------health facilities-----------
+   map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file
+    fetch("/static/data/Infrastructure/health_facilities.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('health_facilities', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'health_facilities',
+                type: 'symbol',
+                source: 'health_facilities',
+                layout: {
+                    'icon-image': 'doctor',
+                    'icon-allow-overlap': false,
+                    'visibility': 'none',// Set initial visibility to 'none'
+                    'icon-size': 1.4,
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    // Toggle layer visibility based on checkbox state
+    const layerToggle = document.getElementById('checkbox7');
+    layerToggle.addEventListener('change', () => {
+        if (layerToggle.checked) {
+            map.setLayoutProperty('health_facilities', 'visibility', 'visible');
+            console.log('Layer visibility toggled: visible');
+        } else {
+            map.setLayoutProperty('health_facilities', 'visibility', 'none');
+            console.log('Layer visibility toggled: none');
+        }
+    });
+
+    // Add popup on click
+    map.on('click', 'health_facilities', (e) => {
+        console.log('Feature clicked:', e.features[0]);
+
+        const properties = e.features[0].properties;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        let popupContent = '<h3>' + properties.Name + '</h3>';
+        popupContent += '<p>Category: ' + properties.Category + '</p>';
+        popupContent += '<p>Sub-Category: ' + properties.Sub_Cat + '</p>';
+        popupContent += '<p>Gov/Private: ' + properties.Gov_Pvt + '</p>';
+        popupContent += '<p>Tehsil: ' + properties.Tehsil + '</p>';
+        popupContent += '<p>District: ' + properties.District + '</p>';
+        popupContent += '<p>Province: ' + properties.Province + '</p>';
+
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map);
+    });
+
+    console.log('Event listeners added');
+});
+ // --------------health facilities end-----------
+  
+  // --------------police station start-----------
+  map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file
+    fetch("/static/data/Infrastructure/police_stations.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('police_stations', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'police_stations',
+                type: 'symbol',
+                source: 'police_stations',
+                layout: {
+                    'icon-image': 'police',
+                    'icon-allow-overlap': false,
+                    'visibility': 'none', // Set initial visibility to 'none'
+                    'icon-size': 1.4,
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    // Toggle layer visibility based on checkbox state
+    const layerToggle = document.getElementById('checkbox8');
+    layerToggle.addEventListener('change', () => {
+        if (layerToggle.checked) {
+            map.setLayoutProperty('police_stations', 'visibility', 'visible');
+            console.log('Layer visibility toggled: visible');
+        } else {
+            map.setLayoutProperty('police_stations', 'visibility', 'none');
+            console.log('Layer visibility toggled: none');
+        }
+    });
+
+    // Add popup on click
+    map.on('click', 'police_stations', (e) => {
+        console.log('Feature clicked:', e.features[0]);
+
+        const properties = e.features[0].properties;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        let popupContent = '<h3>' + properties.Name + '</h3>';
+        popupContent += '<p>District: ' + properties.District + '</p>';
+        popupContent += '<p>Province: ' + properties.Province + '</p>';
+        popupContent += '<p>Country: ' + properties.Country + '</p>';
+
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map);
+    });
+
+    console.log('Event listeners added');
+});
+
+  // --------------police station end-----------
+  
+  // ---------- bus station  start--------
+  map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file
+    fetch("/static/data/Infrastructure/bus_stations.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('bus_stations', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'bus_stations',
+                type: 'symbol',
+                source: 'bus_stations',
+                layout: {
+                    'icon-image': 'bus', // Assuming you have an icon named 'bus-15'
+                    'icon-allow-overlap': false,
+                    'visibility': 'none', // Set initial visibility to 'none'
+                    'icon-size': 1.4,
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    // Toggle layer visibility based on checkbox state
+    const layerToggle = document.getElementById('checkbox9'); // Assuming you have a checkbox with id 'checkbox10'
+    layerToggle.addEventListener('change', () => {
+        if (layerToggle.checked) {
+            map.setLayoutProperty('bus_stations', 'visibility', 'visible');
+            console.log('Layer visibility toggled: visible');
+        } else {
+            map.setLayoutProperty('bus_stations', 'visibility', 'none');
+            console.log('Layer visibility toggled: none');
+        }
+    });
+
+    // Add popup on click
+    map.on('click', 'bus_stations', (e) => {
+        console.log('Feature clicked:', e.features[0]);
+
+        const properties = e.features[0].properties;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        let popupContent = '<h3>' + properties.name + '</h3>';
+        popupContent += '<p>District: ' + properties.District + '</p>';
+        popupContent += '<p>Province: ' + properties.Province + '</p>';
+        popupContent += '<p>Country: ' + properties.Country + '</p>';
+
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map);
+    });
+
+    console.log('Event listeners added');
+});
+
+  // ---------- bus station ends---------
+
+  
+  // ---------- fuel station starts---------
+  map.on('load', () => {
+    console.log('Map loaded');
+
+    // Load GeoJSON data from a static file
+    fetch("/static/data/Infrastructure/Fuel_stations.geojson")
+        .then(response => response.json())
+        .then(data => {
+            console.log('GeoJSON data loaded:', data);
+
+            // Add the GeoJSON data as a source to the map
+            map.addSource('fuel_stations', {
+                type: 'geojson',
+                data: data
+            });
+
+            // Add a layer to the map with initial visibility set to 'none'
+            map.addLayer({
+                id: 'fuel_stations',
+                type: 'symbol',
+                source: 'fuel_stations',
+                layout: {
+                    'icon-image': 'fuel', // Assuming you have an icon named 'fuel-15'
+                    'icon-allow-overlap': false,
+                    'visibility': 'none', // Set initial visibility to 'none'
+                    'icon-size': 1.4,
+                }
+            });
+
+            console.log('Layer added');
+        })
+        .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+        });
+
+    // Toggle layer visibility based on checkbox state
+    const layerToggle = document.getElementById('checkbox10'); // Assuming you have a checkbox with id 'checkbox11'
+    layerToggle.addEventListener('change', () => {
+        if (layerToggle.checked) {
+            map.setLayoutProperty('fuel_stations', 'visibility', 'visible');
+            console.log('Layer visibility toggled: visible');
+        } else {
+            map.setLayoutProperty('fuel_stations', 'visibility', 'none');
+            console.log('Layer visibility toggled: none');
+        }
+    });
+
+    // Add popup on click
+    map.on('click', 'fuel_stations', (e) => {
+        console.log('Feature clicked:', e.features[0]);
+
+        const properties = e.features[0].properties;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        let popupContent = '<h3>' + properties.name + '</h3>';
+
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map);
+    });
+
+    console.log('Event listeners added');
+});
+
+  // ---------- fuel station ends---------
+
+
+
+  // ------------ geology---------
+  map.on("style.load", function () {
+  ///////////////////////////////barages/////////////////////////
+  map.addSource("Barrages", {
+    type: "vector",
+    scheme: "tms",
+    tiles: [
+      `http://172.18.1.4:8080/geoserver/gwc/service/tms/1.0.0/abdul_sattar:Barrages@EPSG:900913@pbf/{z}/{x}/{y}.pbf`,
+    ],
+  });
+
+  map.addLayer({
+    id: "Barrages",
+    type: "circle",
+    source: "Barrages",
+    "source-layer": "Barrages",
+    layout: {
+      visibility: "none",
+    },
+    paint: {
+      "circle-color": "pink",
+      "circle-opacity": 1,
+      "circle-radius": 10,
+      'icon-allow-overlap': false, // Allow icons to overlap
+    },
+  });
+
+  ///////////////////////////////headworks/////////////////////////
+  map.addSource("headworks", {
+    type: "vector",
+    scheme: "tms",
+    tiles: [
+      `http://172.18.1.4:8080/geoserver/gwc/service/tms/1.0.0/abdul_sattar:headworks@EPSG:900913@pbf/{z}/{x}/{y}.pbf`,
+    ],
+  });
+
+  map.addLayer({
+    id: "headworks",
+    type: "circle",
+    source: "headworks",
+    "source-layer": "headworks",
+    layout: {
+      visibility: "none",
+    },
+    paint: {
+      "circle-color": "black",
+      "circle-opacity": 1,
+      "circle-radius": 10,
+      'icon-allow-overlap': false, // Allow icons to overlap
+    },
+  });
+
+  ///////////////////////////////Vulnerable_Glacial_Lakes/////////////////////////
+  map.addSource("Vulnerable_Glacial_Lakes", {
+    type: "vector",
+    scheme: "tms",
+    tiles: [
+      `http://172.18.1.4:8080/geoserver/gwc/service/tms/1.0.0/abdul_sattar:Vulnerable_Glacial_Lakes@EPSG:900913@pbf/{z}/{x}/{y}.pbf`,
+    ],
+  });
+
+  map.addLayer({
+    id: "Vulnerable_Glacial_Lakes",
+    type: "circle",
+    source: "Vulnerable_Glacial_Lakes",
+    "source-layer": "Vulnerable_Glacial_Lakes",
+    layout: {
+      visibility: "none",
+    },
+    paint: {
+      "circle-color": "purple",
+      "circle-opacity": 1,
+      "circle-radius": 10,
+      'icon-allow-overlap': false, // Allow icons to overlap
+    },
+  });
+
+  ///////////////////////////////Waterways_Polygons_Pakistan/////////////////////////
+  map.addSource("Waterways_Polygons_Pakistan", {
+    type: "vector",
+    scheme: "tms",
+    tiles: [
+      `http://172.18.1.4:8080/geoserver/gwc/service/tms/1.0.0/abdul_sattar:Waterways_Polygons_Pakistan@EPSG:900913@pbf/{z}/{x}/{y}.pbf`,
+    ],
+  });
+
+  map.addLayer({
+    id: "Waterways_Polygons_Pakistan",
+    type: "fill",
+    source: "Waterways_Polygons_Pakistan",
+    "source-layer": "Waterways_Polygons_Pakistan",
+    layout: {
+      visibility: "none",
+    },
+    paint: {
+      "fill-color": "blue",
+      "fill-opacity": 1,
+      'circle-opacity': 0.8,
+      
+    },
+  });
+
+  ///////////////////////////////GlaciedAreas/////////////////////////
+  map.addSource("GlaciedAreas", {
+    type: "vector",
+    scheme: "tms",
+    tiles: [
+      `http://172.18.1.4:8080/geoserver/gwc/service/tms/1.0.0/abdul_sattar:Glaciated_Areas@EPSG:900913@pbf/{z}/{x}/{y}.pbf`,
+    ],
+  });
+
+  map.addLayer({
+    id: "GlaciedAreas",
+    type: "fill",
+    source: "GlaciedAreas",
+    "source-layer": "Glaciated_Areas",
+    layout: {
+      visibility: "none",
+    },
+    paint: {
+      "fill-color": "white",
+      "fill-opacity": 1,
+      
+    },
+  });
+
+  
+  
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  var layerIds = [
+    "Barrages",
+    "headworks",
+    "Vulnerable_Glacial_Lakes",
+    "Waterways_Polygons_Pakistan",
+    "GlaciedAreas",
+  ];
+
+  var buttons = document.querySelectorAll(".map-overlay-items button");
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var clickedLayerId = this.id;
+      toggleLayerVisibility(clickedLayerId);
+    });
+  });
+
+  function toggleLayerVisibility(clickedLayerId) {
+    layerIds.forEach(function (layerId) {
+      var layer = map.getLayer(layerId);
+      if (layer) {
+        var visibility = map.getLayoutProperty(layerId, "visibility");
+        if (layerId === clickedLayerId && visibility === "visible") {
+          map.setLayoutProperty(layerId, "visibility", "none");
+        } else if (layerId === clickedLayerId && visibility === "none") {
+          map.setLayoutProperty(layerId, "visibility", "visible");
+        } else {
+          // For other layers, hide them
+          map.setLayoutProperty(layerId, "visibility", "none");
+        }
+      }
+    });
+  }
+});
+
+
+  </script>
+  {% endblock script %}
+

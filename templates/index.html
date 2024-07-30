@@ -1,0 +1,192 @@
+{% extends "tourism-base.html" %}
+{% load static %}
+{% block title %}Tourism{% endblock title %}
+
+{% block content %}
+<style>
+    /* Style for the background video */
+    #background-video {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -1;
+        opacity: 1;
+    }
+    /* CSS for image zoom effect */
+    .click-image {
+  
+        width: 350px;
+        height: 240px;
+    }
+
+  
+    .zoom-effect-text {
+    transition: transform 0.3s ease-in-out;
+    }
+
+    .box-container {
+        margin-bottom: 20px;
+    }
+    
+    .box {
+        width: 350px;
+        height: 250px;
+        border: 5px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    
+    .text-box {
+        width: 350px;
+        height: 50px;
+        border: 5px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(to bottom, #18bede, #50d7bf);
+        color:white;
+    }
+    
+  
+
+   
+   
+    .logo {
+        height:340px;
+         width:340px;
+    }
+    
+    .main-heading {
+        font-size: 6rem;
+        margin-bottom: 20px;
+        background: linear-gradient(to right, rgba(24, 190, 222, 0.8), rgba(80, 215, 191, 0.8));
+        padding: 10px 20px;
+        border-radius: 5px;
+        color: white;
+        text-shadow: 
+            -3px 0 black, 
+            0 3px black, 
+            3px 0 black, 
+            0 -3px black,
+            -3px -3px black,
+            -3px 3px black,
+            3px -3px black,
+            3px 3px black;
+        
+    }
+ 
+</style>
+<!-- Main Navigation -->
+<header>
+ 
+
+  <!-- Background video -->
+  <video id="background-video" autoplay loop muted playsinline>
+    <source src="{% static 'img/bgvideo.mp4' %}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</header>
+ 
+
+
+</header>
+<!-- Main Navigation -->
+
+<!-- Main layout -->
+<main class="main-content" >
+    <div class="container-fluid pt-4">
+        <!-- New Section for Logo and Heading -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-12 text-center">
+                <img src="{% static 'img/ndma_logo.png' %}" alt="Logo" class="logo" style="">
+                <h1 class="main-heading" style="margin-top: 3%; color:white;">Pakistan Tourism Portal</h1>
+            </div>
+        </div>
+        <div class="row justify-content-center" style="margin-top: 7%;">
+            <div class="col-lg-12" id="mainContent">
+                <div class="row image-container"> 
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'capital-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/islamabad.jpg' %}" alt="Image 1" class="img-fluid click-image " onclick="toggleDropdown('capital-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1  style="font-size: 1.8rem;">Capital</h1>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'punjab-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/multan.png' %}" alt="Image 3" class="img-fluid click-image " onclick="toggleDropdown('punjab-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Punjab</h1>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'sindh-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/image-3-102.jpg' %}" alt="Image 2" class="img-fluid click-image " onclick="toggleDropdown('sindh-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Sindh</h1>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'balochistan-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/balochistan-2.jpg' %}" alt="Image 4" class="img-fluid click-image " onclick="toggleDropdown('balochistan-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Balochistan</h1>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'kpk-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/Chitral-1024x640.jpg' %}" alt="Image 4" class="img-fluid click-image " onclick="toggleDropdown('kpk-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Khyber Pakhtunkhwa</h1>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 box-container">
+                        <a href="{% url 'gilgit-home' %}" class="d-flex flex-column align-items-center">
+                            <div class="box">
+                                <img src="{% static 'img/province-icons/gb.jpg' %}" alt="Image 4" class="img-fluid click-image " onclick="toggleDropdown('gilgitBaltistan-dropdown-menu')">
+                            </div>
+                            <div class="text-box">
+                                <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Gilgit-Baltistan</h1>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+  
+
+<!-- Main layout -->
+
+<!--Main layout-->
+{% endblock content %}
+
+{% block script %}
+
+{% endblock script %}
+
+

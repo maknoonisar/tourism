@@ -1,0 +1,156 @@
+{% extends "tourism-base.html" %}
+{% load static %}
+{% block title %}Tourism{% endblock title %}
+
+{% block content %}
+<style>
+    /* Style for the background video */
+    #background-video {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -1;
+        opacity: 1;
+    }
+    /* CSS for image zoom effect */
+    .clickable-image {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .clickable-image:hover {
+        transform: scale(2.0);
+    }
+    .zoom-effect-text {
+    transition: transform 0.3s ease-in-out;
+    }
+
+/* Style for the image container with transparency */
+.image-container {
+    background-color: rgba(255, 255, 255, 0.6); /* Add RGBA color with 80% opacity */
+    padding: 20px; /* Add padding to create space between the images */
+    margin-bottom: 20px; /* Add margin to create space between the rows */
+    border-radius: 10px; /* Add border radius for rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+}
+
+
+
+</style>
+<!-- Main Navigation -->
+<header>
+    <!-- Navbar -->
+    <nav id="main-navbar" class="navbar navbar-expand-lg  fixed-top"  style="background-color: #135D66;">
+      <div class="container-fluid">
+          <div class="row align-items-center">
+              <!-- Logo button -->
+              <div class="col-auto">
+                  <a class="navbar-brand me-3" href="#">
+                      <img src="{% static 'img/ndma_logo.png' %}" height="40" alt="" loading="lazy" />
+                  </a>
+              </div>            
+               <!-- Centered text -->
+            <div class="col text-center">
+              <span class="navbar-text mx-auto" style="font-weight: 600;
+              font-size: 30px; padding-left: 750px; color: #fbfbfb;">Pakistan Tourism Portal</span>
+             </div>
+          </div>
+      </div>
+  </nav> 
+  <!-- Navbar -->
+
+  <!-- Background video -->
+  <video id="background-video" autoplay loop muted playsinline>
+    <source src="{% static 'img/bgvideo.mp4' %}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</header>
+ 
+
+
+</header>
+<!-- Main Navigation -->
+
+<!-- Main layout -->
+<main class="main-content" style="margin-top: 18%;">
+    <div class="container-fluid pt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-12" id="mainContent">
+                <div class="row image-container"> 
+                    <div class="col-lg-2">
+                        <a href="{% url 'capital-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/islamabad-icon.png' %}" alt="Image 1" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('capital-dropdown-menu')">
+                            <!-- <img src="{% static 'img/province-icons/ISB.png' %}" alt="Image 1" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('capital-dropdown-menu')" style="width:150px; height:160px;"> -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Capital</h1>
+                        </a>
+                    </div>
+                    <div class="col-lg-2">
+                        <a href="{% url 'punjab-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/lahore-icon.png' %}" alt="Image 3" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('punjab-dropdown-menu')">
+                            <!-- <img src="{% static 'img/province-icons/LAHORE.png' %}" alt="Image 3" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('punjab-dropdown-menu')" style="width:150px; height:160px;"> -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Punjab</h1>
+                        </a>
+                    </div>
+                    <div class="col-lg-2">
+                        <a href="{% url 'sindh-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/karachi-icon.png' %}" alt="Image 2" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('sindh-dropdown-menu')" >
+                            <!-- <img src="{% static 'img/province-icons/KARACHI.png' %}" alt="Image 2" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('sindh-dropdown-menu')" style="width:150px; height:160px;"> -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Sindh</h1>
+                        </a>
+                    </div>
+                   
+                    <div class="col-lg-2">
+                        <a href="{% url 'balochistan-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/balochistan-icon.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('balochistan-dropdown-menu')" >
+                            <!-- <img src="{% static 'img/province-icons/BAL.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('balochistan-dropdown-menu')" style="width:150px; height:160px;" > -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;" >Balochistan</h1>
+                        </a>
+                    </div>
+                    <div class="col-lg-2">
+                        <a href="{% url 'kpk-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/peshwar-icon.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('kpk-dropdown-menu')" >
+                            <!-- <img src="{% static 'img/province-icons/PESHWAR.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('kpk-dropdown-menu')" style="width:150px; height:160px;"> -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Khyber Pakhtunkhwa</h1>
+                        </a>
+                    </div>
+                    <div class="col-lg-2">
+                        <a href="{% url 'gilgit-home' %}" class="d-flex flex-column align-items-center">
+                            <img src="{% static 'img/province-icons/Gb.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" style="size: 1.8rem;" onclick="toggleDropdown('gilgitBaltistan-dropdown-menu')">
+                            <!-- <img src="{% static 'img/province-icons/islamabad-icon.png' %}" alt="Image 4" class="img-fluid clickable-image zoom-in" onclick="toggleDropdown('gilgitBaltistan-dropdown-menu')" style="width:150px; height:160px;"> -->
+                            <hr>
+                            <hr>
+                            <h1 class="zoom-effect-text" style="font-size: 1.8rem;">Gilgit-Baltistan</h1>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+  
+
+<!-- Main layout -->
+
+<!--Main layout-->
+{% endblock content %}
+
+{% block script %}
+
+{% endblock script %}
+
+
